@@ -15,6 +15,7 @@
     "ai": "^5.0.93",
     "cli-progress": "^3.12.0",
     "p-limit": "^7.2.0",
+    "p-throttle": "^8.1.0",
     "puppeteer": "^24.30.0"
   }
 }
