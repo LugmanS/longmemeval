@@ -17,3 +17,16 @@ type Message = {
   content: string;
   has_answer: boolean;
 };
+
+type UsageData = {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  reasoningTokens: number;
+};
+
+type Hypothesis = {
+  question_id: string;
+  hypothesis: string;
+  usage: UsageData;
+};
