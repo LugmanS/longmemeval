@@ -27,24 +27,34 @@ const modelOptions = { google: { thinkingConfig: { thinkingBudget: -1 } } };
 const limit = pLimit(20);
 const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-const results: { question_id: string; hypothesis: string }[] = [];
+const results: {
+  question_id: string;
+  hypothesis: string;
+  usage: any;
+}[] = [];
 
 const promises = dataset.map((entry) =>
   limit(async () => {
     const prompt = getFullContextPrompt(entry);
-    const { text: answer } = await generateText({
+    const { text: answer, usage } = await generateText({
       model: model,
       prompt: prompt,
       providerOptions: modelOptions,
+      maxRetries: 3,
     });
 
     results.push({
       question_id: entry.question_id,
       hypothesis: answer,
+      usage,
     });
     bar.update(results.length);
     fs.writeFileSync(outputFilePath, JSON.stringify(results, null, 2));
   })
+);
+
+console.log(
+  `Generating with full context as text for ${dataset.length} entries\n`
 );
 
 bar.start(dataset.length, 0);
@@ -52,3 +62,5 @@ bar.start(dataset.length, 0);
 await Promise.all(promises);
 
 bar.stop();
+
+console.log(`\nOutput written to ${outputFilePath}`);
