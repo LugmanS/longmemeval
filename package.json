@@ -1,0 +1,19 @@
+{
+  "name": "madhiai-longmemeval",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/cli-progress": "^3.11.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.34",
+    "ai": "^5.0.93",
+    "cli-progress": "^3.12.0",
+    "p-limit": "^7.2.0"
+  }
+}
