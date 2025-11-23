@@ -1,16 +1,15 @@
-import puppeteer from "puppeteer";
+import puppeteer, { Browser } from "puppeteer";
 import fs from "fs";
 import pLimit from "p-limit";
+import cliProgress from "cli-progress";
 
 async function generateImage(
+  browser: Browser,
   sessionIndex: number,
   sessionDate: string,
   content: string,
   path: string
 ) {
-  const browser = await puppeteer.launch({
-    headless: true,
-  });
   const page = await browser.newPage();
 
   const html = `<html>
@@ -46,7 +45,7 @@ async function generateImage(
   await page.setViewport({
     width: 794,
     height: 1123,
-    deviceScaleFactor: 300 / 96,
+    deviceScaleFactor: 150 / 96,
   });
 
   await page.setContent(html);
@@ -56,7 +55,8 @@ async function generateImage(
     type: "png",
     fullPage: true,
   });
-  await browser.close();
+
+  await page.close();
 }
 
 const inputPath = process.argv[2];
@@ -65,10 +65,10 @@ if (!inputPath) {
   process.exit(1);
 }
 
-const imagesBasePath = "./context-images";
+const imagesBasePath = "./context-images-150dpi";
 fs.mkdirSync(imagesBasePath, { recursive: true });
 
-const limit = pLimit(20);
+const limit = pLimit(100);
 
 const dataset = JSON.parse(fs.readFileSync(inputPath, "utf-8")) as Question[];
 
@@ -92,7 +92,6 @@ dataset.forEach((d) => {
 
     s.forEach((m, j) => {
       chunkCharCount += m.content.length;
-      console.log(j, chunkCharCount, chunkContent.length);
 
       if (chunkCharCount >= 5500) {
         chunks.push({
@@ -103,7 +102,6 @@ dataset.forEach((d) => {
           chunkContent,
           questionChunkIndex: ++chunkCount,
         });
-        console.log("new chunk");
         chunkContent = [{ ...m }];
         chunkCharCount = m.content.length;
         return;
@@ -125,22 +123,58 @@ dataset.forEach((d) => {
   });
 });
 
-fs.writeFileSync(`chunks.json`, JSON.stringify(chunks, null, 2));
+const browser = await puppeteer.launch({
+  headless: true,
+});
 
-const promises = chunks.map((chunk) =>
+const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+
+let completed = 0;
+
+const filteredItems = chunks.filter(
+  (item) =>
+    !fs.existsSync(
+      `${imagesBasePath}/${item.questionId}/${item.questionChunkIndex}.png`
+    )
+);
+
+console.log(
+  `Generating ${filteredItems.length} images, chunks: ${chunks.length}`
+);
+
+bar.start(filteredItems.length, 0);
+
+const promises = filteredItems.map((chunk) =>
   limit(async () => {
-    const content = chunk.chunkContent
-      .map(
-        (m) =>
-          `<p style="margin-bottom: 16px;"><span style="color:red;font-weight:600;text-transform:capitalize;">${m.role}:</span> ${m.content}</p>`
-      )
-      .join(" ");
     const imagePath = `${imagesBasePath}/${chunk.questionId}`;
-    fs.mkdirSync(imagePath, { recursive: true });
+    try {
+      const content = chunk.chunkContent
+        .map(
+          (m) =>
+            `<p style="margin-bottom: 16px;"><span style="color:red;font-weight:600;text-transform:capitalize;">${m.role}:</span> ${m.content}</p>`
+        )
+        .join(" ");
+      fs.mkdirSync(imagePath, { recursive: true });
 
-    const path = `${imagePath}/${chunk.questionChunkIndex}`;
-    await generateImage(chunk.sessionIndex, chunk.sessionDate, content, path);
+      const path = `${imagePath}/${chunk.questionChunkIndex}`;
+      await generateImage(
+        browser,
+        chunk.sessionIndex,
+        chunk.sessionDate,
+        content,
+        path
+      );
+      bar.update(++completed);
+    } catch (e) {
+      console.log(
+        `Error generating image for ${imagePath}/${chunk.questionChunkIndex}:`,
+        e
+      );
+    }
   })
 );
 
 await Promise.all(promises);
+
+await browser.close();
+bar.stop();
