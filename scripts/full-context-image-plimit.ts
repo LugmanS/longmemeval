@@ -1,5 +1,4 @@
-import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { GoogleGenAI } from "@google/genai";
 import cliProgress from "cli-progress";
 import fs from "fs";
 import pLimit from "p-limit";
@@ -16,8 +15,10 @@ const dataset = JSON.parse(
   fs.readFileSync(inputFilePath, "utf-8")
 ) as Question[];
 
-const model = google("gemini-2.5-flash");
-const modelOptions = { google: { thinkingConfig: { thinkingBudget: -1 } } };
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+const config = { thinkingConfig: { thinkingBudget: -1 } };
 
 const limit = pLimit(12);
 
@@ -57,39 +58,56 @@ const promises = dataset
       try {
         const files = fs.readdirSync(`${imageFolder}/${entry.question_id}`);
 
-        const { text: answer, usage } = await generateText({
-          model: model,
-          providerOptions: modelOptions,
-          maxRetries: 2,
-          messages: [
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          config,
+          contents: [
             {
               role: "user",
-              content: [
-                ...files.map(
-                  (f) =>
-                    ({
-                      type: "image",
-                      image: fs.readFileSync(
-                        `${imageFolder}/${entry.question_id}/${f}`,
-                        {
-                          encoding: "base64",
-                        }
-                      ),
-                    } as any)
-                ),
-                {
-                  type: "text",
-                  text: getFullImageContextPrompt(entry),
-                },
+              parts: [
+                ...files.map((f) => ({
+                  inlineData: {
+                    data: fs.readFileSync(
+                      `${imageFolder}/${entry.question_id}/${f}`,
+                      {
+                        encoding: "base64",
+                      }
+                    ),
+                    mimeType: "image/png",
+                  },
+                })),
+                { text: getFullImageContextPrompt(entry) },
               ],
             },
           ],
         });
 
+        if (
+          !response.candidates ||
+          !response.candidates[0] ||
+          !response.candidates[0].content ||
+          !response.candidates[0].content.parts
+        ) {
+          console.error(
+            `Error with response for document ${entry.question_id}:`,
+            response
+          );
+          return;
+        }
+
+        const rawOutput = response.candidates[0]?.content?.parts[0]?.text;
+        if (!rawOutput) {
+          console.error(
+            `Error with response for document ${entry.question_id}:`,
+            response
+          );
+          return;
+        }
+
         results.push({
           question_id: entry.question_id,
-          hypothesis: answer,
-          usage,
+          hypothesis: rawOutput,
+          usage: response.usageMetadata,
         });
         fs.writeFileSync(outputFilePath, JSON.stringify(results, null, 2));
         bar.update(results.length);

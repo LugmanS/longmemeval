@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.34",
+    "@google/genai": "^1.30.0",
     "ai": "^5.0.93",
     "cli-progress": "^3.12.0",
     "p-limit": "^7.2.0",
