@@ -3,7 +3,7 @@ import { generateText } from "ai";
 import cliProgress from "cli-progress";
 import fs from "fs";
 import pThrottle from "p-throttle";
-import { getFullContextPrompt, getFullImageContextPrompt } from "../util";
+import { getFullImageContextPrompt } from "../util";
 
 const inputFilePath = process.argv[2];
 if (!inputFilePath) {
@@ -11,8 +11,10 @@ if (!inputFilePath) {
   process.exit(1);
 }
 
+const imageFolder = "./context-images-150dpi";
+
 const outputFilePath =
-  "./gemini-2.5-flash-dynamic-thinking-full-image-context-sm.json";
+  "./gemini-2.5-flash-dynamic-thinking-full-image-context.json";
 if (!outputFilePath) {
   console.error("Output file path is required.");
   process.exit(1);
@@ -26,7 +28,7 @@ const model = google("gemini-2.5-flash");
 const modelOptions = { google: { thinkingConfig: { thinkingBudget: -1 } } };
 
 const throttle = pThrottle({
-  limit: 4,
+  limit: 10,
   interval: 1000 * 60,
 });
 const results: {
@@ -54,7 +56,11 @@ const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
 const throttled = throttle(async (entry) => {
   try {
-    console.log("Sending request for ", entry.question_id);
+    const files = fs.readdirSync(`${imageFolder}/${entry.question_id}`);
+    console.log(
+      `Sending request for ${entry.question_id} with ${files.length} images`
+    );
+
     const { text: answer, usage } = await generateText({
       model: model,
       providerOptions: modelOptions,
@@ -63,7 +69,7 @@ const throttled = throttle(async (entry) => {
         {
           role: "user",
           content: [
-            ...fs.readdirSync(`${imageFolder}/${entry.question_id}`).map(
+            ...files.map(
               (f) =>
                 ({
                   type: "image",
@@ -89,8 +95,9 @@ const throttled = throttle(async (entry) => {
       hypothesis: answer,
       usage,
     });
-    bar.update(results.length);
     fs.writeFileSync(outputFilePath, JSON.stringify(results, null, 2));
+    console.log(`Answer for ${entry.question_id}: ${answer}`);
+    bar.update(results.length);
   } catch (error) {
     console.error(`Error generating text for ${entry.question_id}: ${error}`);
   }
@@ -102,15 +109,10 @@ console.log(
 
 bar.start(dataset.length, results.length);
 
-const imageFolder = "./context-images";
 const ids = fs.readdirSync(imageFolder);
 
 for (const entry of dataset.filter(
   (d) => ids.includes(d.question_id) && !completedIds.includes(d.question_id)
 )) {
-  (async () => {
-    const files = fs.readdirSync(`${imageFolder}/${entry.question_id}`);
-    if (files.length < 100) return;
-    await throttled(entry);
-  })();
+  (async () => await throttled(entry))();
 }
