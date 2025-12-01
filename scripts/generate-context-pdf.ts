@@ -1,7 +1,6 @@
-import puppeteer, { Browser } from "puppeteer";
-import fs from "fs";
-import pLimit from "p-limit";
 import cliProgress from "cli-progress";
+import fs from "fs";
+import puppeteer, { Browser } from "puppeteer";
 
 async function generateImage(browser: Browser, content: string, path: string) {
   const page = await browser.newPage();
@@ -72,8 +71,6 @@ if (!inputPath) {
 const imagesBasePath = "./context-pdfs-max-700";
 fs.mkdirSync(imagesBasePath, { recursive: true });
 
-const limit = pLimit(1);
-
 const dataset = JSON.parse(fs.readFileSync(inputPath, "utf-8")) as Question[];
 
 const context: any = [];
@@ -92,34 +89,6 @@ dataset.forEach((d) => {
       text += `<p style="margin-bottom: 16px; font-size: 20px !important; line-height: 28px !important;"><span style="color:red;font-weight:600;text-transform:capitalize;">${m.role}:</span> ${m.content}</p>`;
     });
   });
-
-  fs.writeFileSync(
-    `${d.question_id}.html`,
-    `<html>
-  <head>
-    <style>
-      *{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            background: #fff;
-        }
-        .header {
-            border-bottom: 1px solid gray;
-            padding: 16px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 18px;
-            margin-bottom: 40px;
-        }
-    </style>
-  </head>
-  <body>
-    ${text}
-  </body>
-</html>`
-  );
 
   context.push({
     questionId: d.question_id,
