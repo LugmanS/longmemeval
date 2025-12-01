@@ -9,11 +9,19 @@ async function generateImage(browser: Browser, content: string, path: string) {
   const html = `<html>
   <head>
     <style>
-      *{
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             background: #fff;
+        }
+        body {
+            /* Ensure the body handles text wrapping correctly */
+            width: 100%;
+            overflow-wrap: break-word; 
+            word-wrap: break-word;
+            word-break: break-word;
+            font-family: sans-serif; /* Good practice to set a font */
         }
         .header {
             border-bottom: 1px solid gray;
@@ -23,6 +31,12 @@ async function generateImage(browser: Browser, content: string, path: string) {
             align-items: center;
             font-size: 18px;
             margin-bottom: 40px;
+        }
+        /* Specific class for content to ensure consistency */
+        .content-text {
+            margin-bottom: 16px; 
+            font-size: 20px; 
+            line-height: 28px;
         }
     </style>
   </head>
@@ -42,6 +56,8 @@ async function generateImage(browser: Browser, content: string, path: string) {
       left: "40px",
       right: "40px",
     },
+    preferCSSPageSize: true,
+    scale: 1,
   });
   fs.writeFileSync(path, pdf);
   await page.close();
@@ -73,9 +89,37 @@ dataset.forEach((d) => {
         <p>Session Date: ${sessionDate}</p>
     </div>`;
     s.forEach((m) => {
-      text += `<p style="margin-bottom: 16px; font-size: 20px; line-height: 28px;"><span style="color:red;font-weight:600;text-transform:capitalize;">${m.role}:</span> ${m.content}</p>`;
+      text += `<p style="margin-bottom: 16px; font-size: 20px !important; line-height: 28px !important;"><span style="color:red;font-weight:600;text-transform:capitalize;">${m.role}:</span> ${m.content}</p>`;
     });
   });
+
+  fs.writeFileSync(
+    `${d.question_id}.html`,
+    `<html>
+  <head>
+    <style>
+      *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: #fff;
+        }
+        .header {
+            border-bottom: 1px solid gray;
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+    </style>
+  </head>
+  <body>
+    ${text}
+  </body>
+</html>`
+  );
 
   context.push({
     questionId: d.question_id,
