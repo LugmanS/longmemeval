@@ -11,12 +11,13 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.34",
+    "@ai-sdk/google": "^2.0.44",
     "@google/genai": "^1.30.0",
     "ai": "^5.0.93",
     "cli-progress": "^3.12.0",
     "p-limit": "^7.2.0",
     "p-throttle": "^8.1.0",
+    "pdf2pic": "^3.2.0",
     "puppeteer": "^24.30.0"
   }
 }
