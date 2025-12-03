@@ -1,0 +1,71 @@
+{
+  "summary": {
+    "total": 494,
+    "valid": 284,
+    "invalid": 210,
+    "accuracy_percentage": 57.49
+  },
+  "overall_token_usage": {
+    "input": {
+      "average": 48531.84,
+      "min": 4713,
+      "max": 71546,
+      "total": 23974727
+    },
+    "output": {
+      "average": 1839.19,
+      "min": 78,
+      "max": 63172,
+      "total": 908558
+    },
+    "thinking": {
+      "average": 1760.13,
+      "min": 53,
+      "max": 62915
+    }
+  },
+  "performance_by_question_type": {
+    "single-session-user": {
+      "total": 70,
+      "valid": 56,
+      "invalid": 14,
+      "avgThinkingTokens": 561.16,
+      "accuracy": 80
+    },
+    "multi-session": {
+      "total": 133,
+      "valid": 43,
+      "invalid": 90,
+      "avgThinkingTokens": 2774.76,
+      "accuracy": 32.33
+    },
+    "single-session-preference": {
+      "total": 30,
+      "valid": 9,
+      "invalid": 21,
+      "avgThinkingTokens": 2365.57,
+      "accuracy": 30
+    },
+    "temporal-reasoning": {
+      "total": 133,
+      "valid": 89,
+      "invalid": 44,
+      "avgThinkingTokens": 1524.14,
+      "accuracy": 66.92
+    },
+    "knowledge-update": {
+      "total": 77,
+      "valid": 39,
+      "invalid": 38,
+      "avgThinkingTokens": 506.96,
+      "accuracy": 50.65
+    },
+    "single-session-assistant": {
+      "total": 51,
+      "valid": 48,
+      "invalid": 3,
+      "avgThinkingTokens": 2911.12,
+      "accuracy": 94.12
+    }
+  }
+}
